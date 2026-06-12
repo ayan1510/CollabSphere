@@ -17,7 +17,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173', 'http://localhost:5000'];
+
+// Support both trailing-slash and non-trailing-slash forms of allowed origins
+const formattedOrigins = allowedOrigins.reduce((acc, url) => {
+  const cleanUrl = url.replace(/\/$/, '');
+  acc.push(cleanUrl);
+  acc.push(`${cleanUrl}/`);
+  return acc;
+}, []);
+
+app.use(cors({
+  origin: formattedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -46,7 +61,7 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/knowledge_sharing');
     console.log(`MongoDB Connected: ${conn.connection.host}`);
-    
+
     app.listen(PORT, () => {
       console.log(`Server running in development mode on port ${PORT}`);
     });
