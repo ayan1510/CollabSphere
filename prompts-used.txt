@@ -1,0 +1,91 @@
+================================================================================
+                           COLLABSPHERE PROMPT LOG
+================================================================================
+
+This document details the sequence of prompts used during the AI-assisted development of the CollabSphere platform.
+
+--------------------------------------------------------------------------------
+PROMPT 1: Architecture & Scaffolding
+--------------------------------------------------------------------------------
+[Prompt]
+I need to build an internal company knowledge-sharing platform called CollabSphere.
+Stack: React (Vite), Node.js/Express backend, MongoDB (Mongoose), and Tailwind CSS.
+Please define the directory structure and the core MongoDB schemas for:
+- Users (employees with name, department, skills, branch, points, badges, status)
+- Posts (knowledge articles, playbooks, attachments, pinning support)
+- Questions (Stack Overflow style Q&A)
+- Communities (interest circles)
+- Resources (Learning Library files like PDFs, Videos, templates)
+
+[AI Response Summary]
+- Provided a structured monorepo proposal with `backend/` and `frontend/` directories.
+- Formulated Mongoose schemas for User, Post, Question, Community, and Resource with appropriate references and validation hooks.
+- Configured a pre-save hook on the User schema to handle bcrypt password hashing.
+
+[Corrections / Fine-tuning]
+- Added a `community` reference field to the `Post` schema, allowing posts to be published inside specific interest circles.
+- Enabled comments on posts using a sub-document array on the Post schema.
+
+--------------------------------------------------------------------------------
+PROMPT 2: Gamification & Badge Logic
+--------------------------------------------------------------------------------
+[Prompt]
+Create a modular utility to manage user gamification points and reward active contributors with digital badges.
+Points allocation:
+- Share post: +10 pts
+- Ask question: +5 pts
+- Answer question: +5 pts
+- Answer marked as Best Answer: +20 pts (to answerer)
+- Comment: +2 pts
+Badges:
+- 10 points -> Initiate Contributor
+- 50 points -> Knowledge Champion
+- 120 points -> Top Mentor
+- 250 points -> Intellectual Guru
+
+[AI Response Summary]
+- Created `backend/utils/gamification.js` exporting an `awardPoints` helper.
+- Implemented logic to fetch the user, increment points, verify badges against thresholds, push new credentials if earned, and persist the updates in MongoDB.
+
+--------------------------------------------------------------------------------
+PROMPT 3: Admin Command Center Analytics
+--------------------------------------------------------------------------------
+[Prompt]
+Write the backend routes for the Admin Command Center. I need a `/metrics` route that aggregates total employees, posts, questions, and communities. I also need aggregation charts showing:
+1. Employee counts per department.
+2. Employee counts per branch.
+3. Most prevalent skill tags across the company.
+4. Top 5 active contributors (sorted by points).
+Additionally, add routes to toggle user roles (Employee <-> Admin) and user status (Active <-> Suspended).
+
+[AI Response Summary]
+- Created `backend/routes/adminRoutes.js` using Mongoose `$group` and `$unwind` aggregation pipelines.
+- Implemented user status and role update routes, adding protection blocks so admins cannot suspend or demote their own accounts.
+
+--------------------------------------------------------------------------------
+PROMPT 4: Q&A Solved reply mechanics
+--------------------------------------------------------------------------------
+[Prompt]
+Write the Q&A controller routes. Employees should be able to ask questions and answer them. The author of the question should be able to toggle an answer as "Best Answer". When an answer is marked as "Best Answer", the person who wrote the answer should be awarded 20 points.
+
+[AI Response Summary]
+- Developed `backend/routes/questionRoutes.js`.
+- Implemented `/answers/:answerId/best` route using array mapping on question subdocuments. It toggles `isBestAnswer` and calls `awardPoints` to award 20 points when toggled active.
+
+--------------------------------------------------------------------------------
+PROMPT 5: Frontend Bulletproofing (Offline-Fallback Database)
+--------------------------------------------------------------------------------
+[Prompt]
+The hosted static frontend needs to be 100% operational during evaluations, even if the backend server spins down or goes offline.
+How can we build a hybrid state sync mechanism in React?
+If the Node server is online, sync and fetch data via REST APIs. If the server is offline (Network Error / connection refused), fall back to an interactive client-side sandbox powered by localStorage, initialized with seeded mock data. All operations (creating posts, commenting, upvoting, answering, marking best answers, suspending users) must work locally in this fallback database.
+
+[AI Response Summary]
+- Provided a state sync structure in `frontend/src/App.jsx`.
+- Set up health-check pings to `/health`.
+- Structured fallback functions that replicate all API operations locally on `localStorage` strings if the server connection fails, updating the React state immediately.
+- Drafted a separate mock data sheet `frontend/src/mockData.js` to populate the initial database state.
+
+[Corrections / Fine-tuning]
+- Added "Quick Login" shortcut cards on the login view. Reviewers can log in with a single click as either a demo Employee or Admin.
+- Added a pulsing network badge in the top navigation bar to display whether the application is running in "Live Server Sync" or "Demo Mode (Local DB)".
