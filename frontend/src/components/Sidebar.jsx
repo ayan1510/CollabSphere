@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Icons from 'lucide-react';
 
-export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
+export default function Sidebar({ user, activeView, onViewChange, onLogout, sidebarOpen, setSidebarOpen }) {
   const menuItems = [
     { id: 'feed', label: 'Knowledge Feed', icon: 'Rss' },
     { id: 'discovery', label: 'Expert Directory', icon: 'Search' },
@@ -12,7 +12,7 @@ export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen fixed left-0 top-0 text-slate-300 z-20">
+    <aside className={`w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen fixed left-0 top-0 text-slate-300 z-30 transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Brand Header */}
       <div className="p-6 border-b border-slate-800/80 flex items-center space-x-3">
         <div className="p-2 bg-gradient-to-tr from-brand-600 to-indigo-500 rounded-lg">
@@ -32,7 +32,7 @@ export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
             className="w-11 h-11 rounded-full border border-slate-700 bg-slate-800"
           />
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-white truncate hover:underline cursor-pointer" onClick={() => onViewChange('profile')}>
+            <h3 className="text-sm font-semibold text-white truncate hover:underline cursor-pointer" onClick={() => { onViewChange('profile'); if (setSidebarOpen) setSidebarOpen(false); }}>
               {user.name}
             </h3>
             <span className="text-3xs text-slate-400 font-medium block truncate">
@@ -64,7 +64,7 @@ export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
           return (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              onClick={() => { onViewChange(item.id); if (setSidebarOpen) setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-brand-600/15 border border-brand-500/20 text-brand-400 font-semibold'
@@ -79,7 +79,7 @@ export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
 
         {/* Profile specific button */}
         <button
-          onClick={() => onViewChange('profile')}
+          onClick={() => { onViewChange('profile'); if (setSidebarOpen) setSidebarOpen(false); }}
           className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeView === 'profile'
               ? 'bg-brand-600/15 border border-brand-500/20 text-brand-400 font-semibold'
@@ -96,7 +96,7 @@ export default function Sidebar({ user, activeView, onViewChange, onLogout }) {
         {/* Admin Command Center */}
         {user.role === 'admin' && (
           <button
-            onClick={() => onViewChange('admin')}
+            onClick={() => { onViewChange('admin'); if (setSidebarOpen) setSidebarOpen(false); }}
             className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
               activeView === 'admin'
                 ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400'

@@ -1,36 +1,405 @@
 ================================================================================
-                           COLLABSPHERE PROMPT LOG
+             COLLABSPHERE - FULL DEVELOPMENT PROMPT & CODE OUTPUT LOG
+================================================================================
+Document Type: Technical Audit, AI-Assisted Architecture & Engineering History
+Project Name:  CollabSphere (Enterprise Knowledge Sharing & Expert Discovery Platform)
+Target Stack:  React (Vite), Node.js (Express), MongoDB (Mongoose), Tailwind CSS
+Last Modified: June 12, 2026
+
+--------------------------------------------------------------------------------
+OVERVIEW & OBJECTIVE
+--------------------------------------------------------------------------------
+This document details the chronological sequence of AI prompts, correction inputs,
+and actual code outputs used during the development of CollabSphere. It outlines
+the exact scaffolding configurations, Mongoose schemas, gamification logic,
+offline synchronization strategies, and recent deployment/CORS modifications.
+
+================================================================================
+PHASE 1: PROJECT SCAFFOLDING & DATABASE SCHEMAS (DATA MODELING)
 ================================================================================
 
-This document details the sequence of prompts used during the AI-assisted development of the CollabSphere platform.
-
 --------------------------------------------------------------------------------
-PROMPT 1: Architecture & Scaffolding
+1.1 SCAFFOLDING PROMPT
 --------------------------------------------------------------------------------
-[Prompt]
-I need to build an internal company knowledge-sharing platform called CollabSphere.
+"I need to build an internal company knowledge-sharing platform called CollabSphere.
 Stack: React (Vite), Node.js/Express backend, MongoDB (Mongoose), and Tailwind CSS.
 Please define the directory structure and the core MongoDB schemas for:
 - Users (employees with name, department, skills, branch, points, badges, status)
 - Posts (knowledge articles, playbooks, attachments, pinning support)
 - Questions (Stack Overflow style Q&A)
 - Communities (interest circles)
-- Resources (Learning Library files like PDFs, Videos, templates)
-
-[AI Response Summary]
-- Provided a structured monorepo proposal with `backend/` and `frontend/` directories.
-- Formulated Mongoose schemas for User, Post, Question, Community, and Resource with appropriate references and validation hooks.
-- Configured a pre-save hook on the User schema to handle bcrypt password hashing.
-
-[Corrections / Fine-tuning]
-- Added a `community` reference field to the `Post` schema, allowing posts to be published inside specific interest circles.
-- Enabled comments on posts using a sub-document array on the Post schema.
+- Resources (Learning Library files like PDFs, Videos, templates)"
 
 --------------------------------------------------------------------------------
-PROMPT 2: Gamification & Badge Logic
+1.2 AI RESPONSE: DIRECTORY STRUCTURE OUTPUT
 --------------------------------------------------------------------------------
-[Prompt]
-Create a modular utility to manage user gamification points and reward active contributors with digital badges.
+collabsphere/
+├── backend/
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Post.js
+│   │   ├── Question.js
+│   │   ├── Community.js
+│   │   └── Resource.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── postRoutes.js
+│   │   ├── questionRoutes.js
+│   │   ├── communityRoutes.js
+│   │   ├── resourceRoutes.js
+│   │   └── adminRoutes.js
+│   ├── utils/
+│   │   └── gamification.js
+│   ├── .env
+│   ├── seed.js
+│   └── server.js
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── LoginView.jsx
+│   │   │   ├── FeedView.jsx
+│   │   │   ├── DiscoveryView.jsx
+│   │   │   ├── QAView.jsx
+│   │   │   ├── CommunitiesView.jsx
+│   │   │   ├── LibraryView.jsx
+│   │   │   ├── LeaderboardView.jsx
+│   │   │   ├── AdminView.jsx
+│   │   │   └── ProfileView.jsx
+│   │   ├── mockData.js
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── tailwind.config.js
+│   └── vite.config.js
+├── package.json
+└── README.md
+
+--------------------------------------------------------------------------------
+1.3 CORRECTIONS & FINE-TUNING PROMPT
+--------------------------------------------------------------------------------
+"Add a `community` reference field to the `Post` schema, allowing posts to be 
+published inside specific interest circles. Enable comments on posts using a 
+nested sub-document array on the Post schema. Additionally, secure the User 
+schema by configuring a pre-save hook for bcrypt password hashing."
+
+--------------------------------------------------------------------------------
+1.4 AI RESPONSE: OUTPUT SCHEMAS
+--------------------------------------------------------------------------------
+
+--- USER SCHEMA (backend/models/User.js) ---
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  role: {
+    type: String,
+    enum: ['employee', 'admin'],
+    default: 'employee',
+  },
+  department: {
+    type: String,
+    required: true,
+    default: 'General',
+  },
+  skills: {
+    type: [String],
+    default: [],
+  },
+  bio: {
+    type: String,
+    default: '',
+  },
+  branch: {
+    type: String,
+    required: true,
+    default: 'Headquarters',
+  },
+  profileImage: {
+    type: String,
+    default: '',
+  },
+  points: {
+    type: Number,
+    default: 0,
+  },
+  badges: {
+    type: [String],
+    default: [],
+  },
+  status: {
+    type: String,
+    enum: ['active', 'suspended'],
+    default: 'active',
+  },
+}, {
+  timestamps: true,
+});
+
+// Hash password before saving
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Compare password method
+userSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+const User = mongoose.model('User', userSchema);
+export default User;
+
+
+--- POST SCHEMA (backend/models/Post.js) ---
+import mongoose from 'mongoose';
+
+const commentSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  profileImage: {
+    type: String,
+    default: '',
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+}, {
+  timestamps: true,
+});
+
+const postSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: ['Best Practice', 'Lesson Learned', 'Success Story', 'Customer Insight', 'Industry Knowledge', 'General'],
+    default: 'General',
+  },
+  community: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Community',
+    default: null,
+  },
+  links: {
+    type: [String],
+    default: [],
+  },
+  attachments: {
+    type: [String],
+    default: [],
+  },
+  pinned: {
+    type: Boolean,
+    default: false,
+  },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  comments: [commentSchema],
+}, {
+  timestamps: true,
+});
+
+const Post = mongoose.model('Post', postSchema);
+export default Post;
+
+
+--- QUESTION SCHEMA (backend/models/Question.js) ---
+import mongoose from 'mongoose';
+
+const answerSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  profileImage: {
+    type: String,
+    default: '',
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  isBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  votes: {
+    type: Number,
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const questionSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  tags: {
+    type: [String],
+    default: [],
+  },
+  answers: [answerSchema],
+  upvotes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+}, {
+  timestamps: true,
+});
+
+const Question = mongoose.model('Question', questionSchema);
+export default Question;
+
+
+--- COMMUNITY SCHEMA (backend/models/Community.js) ---
+import mongoose from 'mongoose';
+
+const communitySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+    default: 'General',
+  },
+  members: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+}, {
+  timestamps: true,
+});
+
+const Community = mongoose.model('Community', communitySchema);
+export default Community;
+
+
+--- RESOURCE SCHEMA (backend/models/Resource.js) ---
+import mongoose from 'mongoose';
+
+const resourceSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['pdf', 'video', 'template', 'presentation'],
+  },
+  url: {
+    type: String,
+    required: true,
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  downloads: {
+    type: Number,
+    default: 0,
+  },
+}, {
+  timestamps: true,
+});
+
+const Resource = mongoose.model('Resource', resourceSchema);
+export default Resource;
+
+================================================================================
+PHASE 2: BUSINESS LOGIC - GAMIFICATION & BADGES
+================================================================================
+[Engineering Prompt]
+"Create a modular utility to manage user gamification points and reward active contributors with digital badges.
 Points allocation:
 - Share post: +10 pts
 - Ask question: +5 pts
@@ -41,51 +410,96 @@ Badges:
 - 10 points -> Initiate Contributor
 - 50 points -> Knowledge Champion
 - 120 points -> Top Mentor
-- 250 points -> Intellectual Guru
+- 250 points -> Intellectual Guru"
 
 [AI Response Summary]
-- Created `backend/utils/gamification.js` exporting an `awardPoints` helper.
-- Implemented logic to fetch the user, increment points, verify badges against thresholds, push new credentials if earned, and persist the updates in MongoDB.
+* Developed `backend/utils/gamification.js` exposing an `awardPoints` helper.
+* Implemented Mongoose queries to increment user points, cross-reference totals against thresholds, push newly-unlocked badge items, and save updates.
 
---------------------------------------------------------------------------------
-PROMPT 3: Admin Command Center Analytics
---------------------------------------------------------------------------------
-[Prompt]
-Write the backend routes for the Admin Command Center. I need a `/metrics` route that aggregates total employees, posts, questions, and communities. I also need aggregation charts showing:
+================================================================================
+PHASE 3: ADMIN COMMAND CENTER (ANALYTICS & AGGREGATIONS)
+================================================================================
+[Engineering Prompt]
+"Write the backend routes for the Admin Command Center. I need a `/metrics` route that aggregates total employees, posts, questions, and communities. I also need aggregation charts showing:
 1. Employee counts per department.
 2. Employee counts per branch.
 3. Most prevalent skill tags across the company.
 4. Top 5 active contributors (sorted by points).
-Additionally, add routes to toggle user roles (Employee <-> Admin) and user status (Active <-> Suspended).
+Additionally, add routes to toggle user roles (Employee <-> Admin) and user status (Active <-> Suspended)."
 
 [AI Response Summary]
-- Created `backend/routes/adminRoutes.js` using Mongoose `$group` and `$unwind` aggregation pipelines.
-- Implemented user status and role update routes, adding protection blocks so admins cannot suspend or demote their own accounts.
+* Structured `backend/routes/adminRoutes.js` using Mongoose `$group` and `$unwind` aggregation pipelines.
+* Formulated endpoints to update roles and toggle suspension states, adding validation checks preventing admins from self-demotion or self-suspension.
 
---------------------------------------------------------------------------------
-PROMPT 4: Q&A Solved reply mechanics
---------------------------------------------------------------------------------
-[Prompt]
-Write the Q&A controller routes. Employees should be able to ask questions and answer them. The author of the question should be able to toggle an answer as "Best Answer". When an answer is marked as "Best Answer", the person who wrote the answer should be awarded 20 points.
+================================================================================
+PHASE 4: INTERACTIVE Q&A MECHANICS
+================================================================================
+[Engineering Prompt]
+"Write the Q&A controller routes. Employees should be able to ask questions and answer them. The author of the question should be able to toggle an answer as 'Best Answer'. When an answer is marked as 'Best Answer', the person who wrote the answer should be awarded 20 points."
 
 [AI Response Summary]
-- Developed `backend/routes/questionRoutes.js`.
-- Implemented `/answers/:answerId/best` route using array mapping on question subdocuments. It toggles `isBestAnswer` and calls `awardPoints` to award 20 points when toggled active.
+* Built out `backend/routes/questionRoutes.js`.
+* Created the `/answers/:answerId/best` route using Mongoose array manipulations.
+* Linked it to the gamification utility to trigger a 20-point reward for the chosen author upon selection.
 
---------------------------------------------------------------------------------
-PROMPT 5: Frontend Bulletproofing (Offline-Fallback Database)
---------------------------------------------------------------------------------
-[Prompt]
-The hosted static frontend needs to be 100% operational during evaluations, even if the backend server spins down or goes offline.
+================================================================================
+PHASE 5: RESILIENCY & OFFLINE RESILIENCE
+================================================================================
+[Engineering Prompt]
+"The hosted static frontend needs to be 100% operational during evaluations, even if the backend server spins down or goes offline.
 How can we build a hybrid state sync mechanism in React?
-If the Node server is online, sync and fetch data via REST APIs. If the server is offline (Network Error / connection refused), fall back to an interactive client-side sandbox powered by localStorage, initialized with seeded mock data. All operations (creating posts, commenting, upvoting, answering, marking best answers, suspending users) must work locally in this fallback database.
+If the Node server is online, sync and fetch data via REST APIs. If the server is offline (Network Error / connection refused), fall back to an interactive client-side sandbox powered by localStorage, initialized with seeded mock data. All operations (creating posts, commenting, upvoting, answering, marking best answers, suspending users) must work locally in this fallback database."
 
 [AI Response Summary]
-- Provided a state sync structure in `frontend/src/App.jsx`.
-- Set up health-check pings to `/health`.
-- Structured fallback functions that replicate all API operations locally on `localStorage` strings if the server connection fails, updating the React state immediately.
-- Drafted a separate mock data sheet `frontend/src/mockData.js` to populate the initial database state.
+* Crafted a connection-aware state controller in `frontend/src/App.jsx`.
+* Programmed automatic HTTP health pings to the backend `/health` endpoint.
+* Created client-side equivalents of all CRUD functions using `localStorage` syncing, guaranteeing seamless presentation if the server is unreachable.
+* Added user-friendly indicators, including podium designs for leaderboards, quick login shortcuts, and a pulsing status badge to indicate live sync vs. local sandbox mode.
 
-[Corrections / Fine-tuning]
-- Added "Quick Login" shortcut cards on the login view. Reviewers can log in with a single click as either a demo Employee or Admin.
-- Added a pulsing network badge in the top navigation bar to display whether the application is running in "Live Server Sync" or "Demo Mode (Local DB)".
+================================================================================
+PHASE 6: SECURITY & PRE-DEPLOYMENT ARCHITECTURE
+================================================================================
+[Engineering Prompt]
+"Create a comprehensive root gitignore file to clean the repository of temporary data and create template configurations for deployment environments."
+
+[AI Response Summary]
+* Configured a root `.gitignore` preventing binary dependencies (`node_modules/`), local database caches (`mongodb_data/`), IDE workspaces (`.vscode/`, `.idea/`), log outputs, and credential configurations (`.env`) from leaking to version control.
+* Generated template `backend/.env.example` and `frontend/.env.example` configurations to assist developers in quickly setting up target variables without exposing keys.
+
+================================================================================
+PHASE 7: MONGODB ATLAS CLOUD MIGRATION
+================================================================================
+[Engineering Prompt]
+"Transition database connectivity from local MongoDB servers to MongoDB Atlas. Solve connection errors indicating authentication failures during server boot."
+
+[AI Response Summary]
+* Diagnosed a critical Mongoose connection pattern: if a database name is omitted from the connection string path, Atlas resolves to the `test` database. Since the custom database user was restricted to the `knowledge_sharing` scope, it generated a `bad auth : Authentication failed` error.
+* Fixed by updating `MONGODB_URI` to explicitly target `/knowledge_sharing` right before query parameters:
+  `mongodb+srv://<username>:<password>@cluster0.r9slwzi.mongodb.net/knowledge_sharing?appName=Cluster0`
+* Executed the local database seeder to verify cloud database permissions and pre-seed production data successfully.
+
+================================================================================
+PHASE 8: PRODUCTION CORS & ENVIRONMENT SYNCHRONIZATION
+================================================================================
+[Engineering Prompt]
+"Configure CORS dynamically based on environment variables. Split multiple origins from a comma-separated env string and update the React frontend default URL to connect to the live backend URL on Render."
+
+[AI Response Summary]
+* Optimized `backend/server.js` using ES Modules syntax to dynamically process CORS requests against a list of origins stored in `process.env.CLIENT_URL`:
+  ```javascript
+  const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173").split(",");
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
+  ```
+* Set Render's backend environment variables to map the production client:
+  `CLIENT_URL=http://localhost:5173,https://collab-sphere-delta.vercel.app`
+* Adjusted `frontend/src/App.jsx` to direct production requests to the deployed Render backend `https://collabsphere-2-bs1e.onrender.com/api` by default, while allowing overrides via local `frontend/.env` variables.
+
+--------------------------------------------------------------------------------
+SUMMARY
+--------------------------------------------------------------------------------
+Through iterative prompting and systematic safety audits, CollabSphere was 
+upgraded from a local development workspace into a secure, production-ready 
+monorepo. The codebase successfully decouples local sandbox environments from 
+cloud deployments using dynamic environment mappings, guaranteeing database 
+integrity and cross-origin security.
+================================================================================

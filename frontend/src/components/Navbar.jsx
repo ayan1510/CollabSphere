@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Icons from 'lucide-react';
 
-export default function Navbar({ activeView, searchQuery, onSearchChange, apiOnline }) {
+export default function Navbar({ activeView, searchQuery, onSearchChange, apiOnline, sidebarOpen, setSidebarOpen }) {
   const getViewTitle = () => {
     switch (activeView) {
       case 'feed':
@@ -26,10 +26,17 @@ export default function Navbar({ activeView, searchQuery, onSearchChange, apiOnl
   };
 
   return (
-    <header className="h-16 bg-slate-900 border-b border-slate-800/80 px-6 flex items-center justify-between sticky top-0 z-10 w-[calc(100%-16rem)] ml-64 text-slate-300">
-      {/* Title */}
-      <div className="flex items-center space-x-2">
-        <h2 className="text-lg font-bold font-sans text-white">{getViewTitle()}</h2>
+    <header className="h-16 bg-slate-900 border-b border-slate-800/80 px-4 md:px-6 flex items-center justify-between sticky top-0 z-10 w-full lg:w-[calc(100%-16rem)] lg:ml-64 text-slate-300 transition-all duration-300">
+      {/* Title & Hamburger Menu */}
+      <div className="flex items-center space-x-3">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-1.5 bg-slate-950/60 border border-slate-800 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors lg:hidden focus:outline-none"
+          aria-label="Toggle menu"
+        >
+          <Icons.Menu className="w-4.5 h-4.5" />
+        </button>
+        <h2 className="text-sm md:text-lg font-bold font-sans text-white truncate max-w-[150px] md:max-w-none">{getViewTitle()}</h2>
       </div>
 
       {/* Global Search Bar (only relevant for search-friendly views) */}

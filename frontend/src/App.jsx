@@ -26,6 +26,7 @@ export default function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('collab_user')) || null);
   const [view, setView] = useState('feed');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // App lists
   const [posts, setPosts] = useState([]);
@@ -1081,11 +1082,21 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 text-slate-100 flex font-sans">
-      {/* Sidebar - fixed */}
+    <div className="min-h-screen bg-dark-950 text-slate-100 flex font-sans overflow-x-hidden">
+      {/* Mobile Sidebar backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - fixed on lg, drawer on mobile */}
       <Sidebar
         user={user}
         activeView={view}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         onViewChange={(v) => {
           setView(v);
           setSearchQuery('');
@@ -1103,10 +1114,12 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           apiOnline={apiOnline}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
         />
 
         {/* Dynamic Inner Workspace Content */}
-        <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-7xl mx-auto w-[calc(100%-16rem)] ml-64">
+        <main className="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto max-w-7xl mx-auto w-full lg:w-[calc(100%-16rem)] lg:ml-64">
           {renderView()}
         </main>
       </div>
