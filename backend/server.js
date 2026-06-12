@@ -17,22 +17,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5000'];
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173").split(",");
 
-// Support both trailing-slash and non-trailing-slash forms of allowed origins
-const formattedOrigins = allowedOrigins.reduce((acc, url) => {
-  const cleanUrl = url.replace(/\/$/, '');
-  acc.push(cleanUrl);
-  acc.push(`${cleanUrl}/`);
-  return acc;
-}, []);
-
-app.use(cors({
-  origin: formattedOrigins,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true
+  })
+);
 app.use(express.json());
 
 // Routes

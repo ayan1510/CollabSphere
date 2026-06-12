@@ -19,7 +19,7 @@ import {
   initialMockResources
 } from './mockData';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://collabsphere-2-bs1e.onrender.com/api';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('collab_token') || null);
