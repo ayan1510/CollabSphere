@@ -52,7 +52,7 @@ CollabSphere is a peer-to-peer knowledge management system and expertise discove
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- MongoDB running locally (default URI: `mongodb://127.0.0.1:27017/knowledge_sharing`)
+- A MongoDB Atlas account and a configured Cluster (or a local MongoDB instance running on your machine)
 
 ### Step 1: Clone and Install Dependencies
 In the root directory, install the dependencies for all directories:
@@ -62,12 +62,17 @@ npm run install:all
 *This installs root dependencies (`concurrently`), backend dependencies (`express`, `mongoose`, `jsonwebtoken`, etc.), and frontend dependencies (`lucide-react`, `tailwindcss`, etc.).*
 
 ### Step 2: Configure Environment Variables
-Inside the `backend/` directory, an `.env` file has been created:
+1. Navigate to the `backend/` directory.
+2. Rename/copy `.env.example` to `.env` if it does not already exist.
+3. Configure the following variables inside `backend/.env`:
 ```env
 PORT=5000
-MONGODB_URI=mongodb://127.0.0.1:27017/knowledge_sharing
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxxx.mongodb.net/collabsphere?retryWrites=true&w=majority
 JWT_SECRET=supersecretjwtkeyforcompanyportal
 ```
+> [!NOTE]
+> Make sure to replace `<username>` and `<password>` with your database user credentials, whitelist your current IP address in your MongoDB Atlas **Network Access** settings, and ensure the target database name is appended (e.g. `/collabsphere`).
+
 
 ### Step 3: Seed the Database
 Seed MongoDB with realistic mock data (employees, communities, Q&As, and posts):
